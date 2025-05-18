@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from "react";
 import { useToast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
@@ -24,7 +23,11 @@ export interface BlockData {
   isMoving?: boolean;
 }
 
-const GameBoard: React.FC = () => {
+interface GameBoardProps {
+  initialLevel?: number | null;
+}
+
+const GameBoard: React.FC<GameBoardProps> = ({ initialLevel = null }) => {
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const [blocks, setBlocks] = useState<BlockData[]>([]);
@@ -57,6 +60,13 @@ const GameBoard: React.FC = () => {
     setIsLevelComplete(false);
     setMoves(0);
     
+    // Update highest level in localStorage
+    const storedHighestLevel = localStorage.getItem("highestLevel");
+    const currentHighestLevel = storedHighestLevel ? parseInt(storedHighestLevel, 10) : 1;
+    if (levelNumber > currentHighestLevel) {
+      localStorage.setItem("highestLevel", levelNumber.toString());
+    }
+    
     if (levelNumber <= tutorialLevels.length) {
       // Load tutorial level
       setBlocks(JSON.parse(JSON.stringify(tutorialLevels[levelNumber - 1])));
@@ -71,10 +81,13 @@ const GameBoard: React.FC = () => {
   // Initialize the game
   useEffect(() => {
     if (!gameStarted) {
-      loadLevel(level);
+      // Use initialLevel if provided, otherwise use level state
+      const levelToLoad = initialLevel || level;
+      setLevel(levelToLoad);
+      loadLevel(levelToLoad);
       setGameStarted(true);
     }
-  }, [gameStarted, level, loadLevel]);
+  }, [gameStarted, level, initialLevel, loadLevel]);
 
   // Check for win condition
   useEffect(() => {
@@ -84,10 +97,19 @@ const GameBoard: React.FC = () => {
     if (keyBlock && keyBlock.x + keyBlock.width >= GRID_SIZE) {
       // Win condition: key block reaches the exit
       setTimeout(() => {
+        // Save completed level
+        const completedLevels = localStorage.getItem("completedLevels");
+        const parsedCompletedLevels = completedLevels ? JSON.parse(completedLevels) : [];
+        
+        if (!parsedCompletedLevels.includes(level)) {
+          parsedCompletedLevels.push(level);
+          localStorage.setItem("completedLevels", JSON.stringify(parsedCompletedLevels));
+        }
+        
         setIsLevelComplete(true);
       }, 300);
     }
-  }, [blocks]);
+  }, [blocks, level]);
 
   // Handle restart button
   const handleRestart = () => {
