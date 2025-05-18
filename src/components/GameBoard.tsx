@@ -2,11 +2,13 @@
 import React, { useState } from "react";
 import Block from "./Block";
 import LevelComplete from "./LevelComplete";
-import { RefreshCw, Trophy } from "lucide-react";
+import GameControls from "./GameControls";
+import { RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { BlockData, GameBoardProps } from "../types/gameTypes";
 import useGameLogic from "../hooks/useGameLogic";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { motion } from "framer-motion";
 
 // Constants for game configuration
 const GRID_SIZE = 6;
@@ -40,67 +42,76 @@ const GameBoard: React.FC<GameBoardProps> = ({ initialLevel = null }) => {
     position: "absolute" as const,
     right: -cellGap,
     top: 2 * blockSize + 3 * cellGap, // Fixed exit at row 2
-    width: cellGap * 2,
+    width: cellGap * 3,
     height: blockSize,
-    background: "rgba(255, 215, 0, 0.2)",
-    boxShadow: "inset 0 0 5px rgba(255, 215, 0, 0.8)",
-    borderRadius: "2px",
   };
 
   return (
     <div className="flex flex-col items-center w-full max-w-md">
-      {/* Game info section */}
-      <div className="w-full flex justify-between items-center mb-4 px-2">
-        <div className="flex items-center space-x-2 bg-[#FEF7CD] p-2 rounded-lg shadow-md">
-          <Trophy size={16} className="text-[#ea384c]" />
-          <span className="font-medium">
-            Level: {level}
-          </span>
-        </div>
-        
-        <div className="flex items-center space-x-2 bg-[#FEF7CD] p-2 rounded-lg shadow-md">
-          <span className="font-medium">Moves: {moves}</span>
-        </div>
-        
-        <Button 
-          variant="outline"
-          size="icon"
-          onClick={handleRestart}
-          className="shadow-md bg-[#FEC6A1] hover:bg-[#FEC6A1]/90 border-none"
-        >
-          <RefreshCw size={18} />
-        </Button>
-      </div>
+      {/* Game controls section */}
+      <GameControls 
+        level={level}
+        moves={moves}
+        onRestart={handleRestart}
+      />
       
-      {/* Game board */}
-      <div 
-        className="relative bg-[#1A1F2C]/95 rounded-lg shadow-lg"
+      {/* Game board container with improved styling */}
+      <motion.div
+        className="relative bg-[#1A1F2C]/95 rounded-2xl overflow-hidden shadow-xl border border-white/10"
         style={{ 
           width: `${boardSize}px`, 
           height: `${boardSize}px`,
           padding: `${cellGap}px`
         }}
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
       >
+        {/* Grid pattern background */}
+        <div className="absolute inset-0 grid"
+          style={{
+            backgroundImage: `linear-gradient(to right, #F1F0FB/5 1px, transparent 1px), 
+                            linear-gradient(to bottom, #F1F0FB/5 1px, transparent 1px)`,
+            backgroundSize: `${blockSize + cellGap}px ${blockSize + cellGap}px`,
+            backgroundPosition: `${cellGap}px ${cellGap}px`
+          }}
+        />
+        
         {/* Grid cells background */}
         {Array.from({ length: GRID_SIZE * GRID_SIZE }).map((_, index) => {
           const x = index % GRID_SIZE;
           const y = Math.floor(index / GRID_SIZE);
           return (
-            <div
+            <motion.div
               key={`cell-${x}-${y}`}
-              className="absolute bg-[#F1F0FB]/10 rounded-sm"
+              className="absolute bg-[#F1F0FB]/5 rounded-sm"
               style={{
                 left: x * (blockSize + cellGap) + cellGap,
                 top: y * (blockSize + cellGap) + cellGap,
                 width: `${blockSize}px`,
                 height: `${blockSize}px`,
               }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.01 * index }}
             />
           );
         })}
         
-        {/* Exit marker - fixed at row 2 */}
-        <div style={exitCellStyle}></div>
+        {/* Exit marker - fixed at row 2 with better visual */}
+        <motion.div 
+          style={exitCellStyle}
+          className="bg-[#FCD34D]/20 rounded-l-md flex items-center justify-center border-l border-[#FCD34D]/40"
+          initial={{ opacity: 0, x: 10 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 0.5, duration: 0.3 }}
+        >
+          <motion.div 
+            className="h-1/2 border-dotted border-l-2 border-[#FCD34D]/60 mr-1"
+            animate={{ x: [0, 5, 0] }}
+            transition={{ repeat: Infinity, duration: 1.5, ease: "easeInOut" }}
+          />
+        </motion.div>
         
         {/* Blocks */}
         {blocks.map((block) => (
@@ -114,7 +125,17 @@ const GameBoard: React.FC<GameBoardProps> = ({ initialLevel = null }) => {
             onPointerUp={handlePointerUp}
           />
         ))}
-      </div>
+      </motion.div>
+      
+      {/* Game instructions */}
+      <motion.div 
+        className="mt-4 text-center max-w-xs text-sm text-[#1A1F2C]/70 bg-white/30 p-2 rounded-lg"
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.6 }}
+      >
+        <p>Slide blocks to help the hamster escape through the exit!</p>
+      </motion.div>
       
       {/* Level complete overlay */}
       {isLevelComplete && (
