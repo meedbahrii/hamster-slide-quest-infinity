@@ -1,5 +1,5 @@
 
-import { BlockData } from "../components/GameBoard";
+import { BlockData } from "../types/gameTypes";
 
 // Generate a random integer between min (inclusive) and max (inclusive)
 const randomInt = (min: number, max: number): number => {
@@ -68,24 +68,41 @@ const tryPlaceBlock = (
   return false;
 };
 
-// Check if a puzzle is solvable (simplified check for demo)
-const isPuzzleSolvable = (blocks: BlockData[]): boolean => {
+// Check if there's a path for the key block to reach the exit
+const checkPathToExit = (blocks: BlockData[], gridSize: number): boolean => {
   const keyBlock = blocks.find(block => block.type === "key");
   if (!keyBlock) return false;
   
-  // Simple heuristic: Check if there's a path to the right edge
-  // This is a very simplified check; a real solver would be more complex
+  // Define the exit row (always at row 2, which is index 2)
+  const exitRow = 2;
   
-  // Check if any vertical blocks block the key's path to exit
-  const blockingVerticals = blocks.filter(block => 
-    block.type === "vertical" && 
-    block.x > keyBlock.x && 
-    block.y <= keyBlock.y && 
-    block.y + block.height > keyBlock.y
+  // If key block isn't in the exit row, it can't reach the exit
+  if (keyBlock.y !== exitRow) {
+    return false;
+  }
+  
+  // Check for obstacles between key block and exit
+  const blockingObjects = blocks.filter(block => 
+    block.type !== "key" && 
+    block.x > keyBlock.x + keyBlock.width - 1 && 
+    block.y <= exitRow && 
+    block.y + block.height > exitRow
   );
   
-  return blockingVerticals.length < 3; // Simple heuristic
-};
+  if (blockingObjects.length === 0) {
+    // No obstacles, can reach exit immediately - this is too easy
+    return false;
+  }
+  
+  // Simple check: if there are too many blocking objects, it might be too hard
+  if (blockingObjects.length > 5) {
+    return false;
+  }
+  
+  // More sophisticated check would need a pathfinding algorithm
+  // For now, assume it's solvable if there are 1-5 blocking objects
+  return true;
+}
 
 // Generate a level with specified difficulty
 export const generateLevel = (gridSize: number, difficulty: number): BlockData[] => {
@@ -98,11 +115,10 @@ export const generateLevel = (gridSize: number, difficulty: number): BlockData[]
     let blocks: BlockData[] = [];
     
     // First, place the key block (always horizontal)
-    const keyY = randomInt(1, gridSize - 2);
     const keyBlock: BlockData = {
       id: "key",
       x: randomInt(0, 2), // Start closer to the left
-      y: keyY,
+      y: 2, // Always place at row 2 (to match exit)
       width: 2,
       height: 1,
       type: "key"
@@ -111,8 +127,8 @@ export const generateLevel = (gridSize: number, difficulty: number): BlockData[]
     blocks.push(keyBlock);
     
     // Number of blocks based on difficulty
-    const numHorizontal = Math.min(difficulty + 2, 8);
-    const numVertical = Math.min(difficulty + 2, 8);
+    const numHorizontal = Math.min(difficulty + 1, 6);
+    const numVertical = Math.min(difficulty + 2, 7);
     
     // Place horizontal blocks
     for (let i = 0; i < numHorizontal; i++) {
@@ -125,7 +141,7 @@ export const generateLevel = (gridSize: number, difficulty: number): BlockData[]
     }
     
     // Check if the puzzle is solvable
-    if (isPuzzleSolvable(blocks) && blocks.length >= difficulty + 3) {
+    if (checkPathToExit(blocks, gridSize) && blocks.length >= difficulty + 3) {
       return blocks;
     }
   }

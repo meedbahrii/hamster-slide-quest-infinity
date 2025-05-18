@@ -1,16 +1,7 @@
 
 import React from "react";
 import { cn } from "@/lib/utils";
-import { BlockData } from "./GameBoard";
-
-interface BlockProps {
-  block: BlockData;
-  blockSize: number;
-  cellGap: number;
-  onPointerDown: (e: React.PointerEvent) => void;
-  onPointerMove: (e: React.PointerEvent) => void;
-  onPointerUp: (e: React.PointerEvent) => void;
-}
+import { BlockProps } from "../types/gameTypes";
 
 const Block: React.FC<BlockProps> = ({
   block,
@@ -45,7 +36,7 @@ const Block: React.FC<BlockProps> = ({
         left: `${left}px`,
         top: `${top}px`,
       }}
-      onPointerDown={onPointerDown}
+      onPointerDown={(e) => onPointerDown(e, block)}
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
       onPointerCancel={onPointerUp}
