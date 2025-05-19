@@ -7,7 +7,7 @@ import { RefreshCw, Volume2, VolumeX } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { BlockData, GameBoardProps } from "../types/gameTypes";
 import useGameLogic from "../hooks/useGameLogic";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useDeviceInfo } from "@/hooks/use-mobile";
 import { motion } from "framer-motion";
 import { useSoundEffects } from "../utils/soundEffects";
 
@@ -17,9 +17,10 @@ const DESKTOP_BLOCK_SIZE = 60; // Size of each block in pixels for desktop
 const DESKTOP_CELL_GAP = 4; // Gap between cells in pixels for desktop
 const MOBILE_BLOCK_SIZE = 50; // Size for mobile
 const MOBILE_CELL_GAP = 3; // Gap for mobile
+const TABLET_BLOCK_SIZE = 55; // Size for tablet
 
 const GameBoard: React.FC<GameBoardProps> = ({ initialLevel = null }) => {
-  const isMobile = useIsMobile();
+  const deviceInfo = useDeviceInfo();
   const { playSound, toggleSound, isSoundEnabled } = useSoundEffects();
   const [soundOn, setSoundOn] = useState(isSoundEnabled());
   
@@ -36,8 +37,16 @@ const GameBoard: React.FC<GameBoardProps> = ({ initialLevel = null }) => {
   } = useGameLogic(initialLevel);
 
   // Adjust sizes based on device
-  const blockSize = isMobile ? MOBILE_BLOCK_SIZE : DESKTOP_BLOCK_SIZE;
-  const cellGap = isMobile ? MOBILE_CELL_GAP : DESKTOP_CELL_GAP;
+  let blockSize = DESKTOP_BLOCK_SIZE;
+  let cellGap = DESKTOP_CELL_GAP;
+  
+  if (deviceInfo.isMobile) {
+    blockSize = MOBILE_BLOCK_SIZE;
+    cellGap = MOBILE_CELL_GAP;
+  } else if (deviceInfo.isTablet) {
+    blockSize = TABLET_BLOCK_SIZE;
+    cellGap = DESKTOP_CELL_GAP;
+  }
   
   const boardSize = GRID_SIZE * blockSize + (GRID_SIZE + 1) * cellGap;
 
@@ -54,6 +63,27 @@ const GameBoard: React.FC<GameBoardProps> = ({ initialLevel = null }) => {
     setSoundOn(newState);
     playSound('BUTTON_CLICK');
   };
+
+  // Add meta tag for mobile viewport if not present
+  React.useEffect(() => {
+    // Check if viewport meta tag exists
+    let viewportMeta = document.querySelector('meta[name="viewport"]');
+    
+    // If it doesn't exist, create it
+    if (!viewportMeta) {
+      viewportMeta = document.createElement('meta');
+      viewportMeta.setAttribute('name', 'viewport');
+      document.getElementsByTagName('head')[0].appendChild(viewportMeta);
+    }
+    
+    // Set proper content for responsive design
+    viewportMeta.setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no');
+    
+    // Return cleanup function
+    return () => {
+      // No need to remove the meta tag on cleanup
+    };
+  }, []);
 
   return (
     <div className="flex flex-col items-center w-full max-w-md">
@@ -88,7 +118,8 @@ const GameBoard: React.FC<GameBoardProps> = ({ initialLevel = null }) => {
         style={{ 
           width: `${boardSize}px`, 
           height: `${boardSize}px`,
-          padding: `${cellGap}px`
+          padding: `${cellGap}px`,
+          touchAction: "none" // Prevent default touch behaviors like scrolling
         }}
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -154,14 +185,18 @@ const GameBoard: React.FC<GameBoardProps> = ({ initialLevel = null }) => {
         ))}
       </motion.div>
       
-      {/* Game instructions */}
+      {/* Game instructions - responsive text */}
       <motion.div 
         className="mt-4 text-center max-w-xs text-sm text-[#1A1F2C]/70 bg-white/30 p-2 rounded-lg"
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.6 }}
       >
-        <p>Slide blocks to help the hamster escape! Push red and green blocks out of the way if needed.</p>
+        <p className={deviceInfo.isMobile ? "text-xs" : "text-sm"}>
+          {deviceInfo.touchDevice 
+            ? "Drag blocks to help the hamster escape! Push red and green blocks out of the way if needed." 
+            : "Slide blocks to help the hamster escape! Push red and green blocks out of the way if needed."}
+        </p>
       </motion.div>
       
       {/* Level complete overlay */}

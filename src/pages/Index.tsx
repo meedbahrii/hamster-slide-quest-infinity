@@ -3,9 +3,11 @@ import { useEffect, useState } from "react";
 import GameBoard from "../components/GameBoard";
 import Header from "../components/Header";
 import { motion } from "framer-motion";
+import { useDeviceInfo } from "@/hooks/use-mobile";
 
 const Index = () => {
   const [selectedLevel, setSelectedLevel] = useState<number | null>(null);
+  const deviceInfo = useDeviceInfo();
 
   useEffect(() => {
     // Update the document title
@@ -45,13 +47,13 @@ const Index = () => {
         <GameBoard initialLevel={selectedLevel} />
         
         <motion.div
-          className="mt-6 p-4 bg-white/60 rounded-lg shadow-md max-w-sm text-sm text-[#1A1F2C]"
+          className={`mt-6 p-4 bg-white/60 rounded-lg shadow-md ${deviceInfo.isMobile ? "max-w-xs" : "max-w-sm"}`}
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.7 }}
         >
           <h2 className="font-bold mb-2">How to Play:</h2>
-          <ul className="list-disc list-inside space-y-1 text-left">
+          <ul className={`list-disc list-inside space-y-1 text-left ${deviceInfo.isMobile ? "text-xs" : "text-sm"} text-[#1A1F2C]`}>
             <li>Drag the <span className="font-medium">hamster block (yellow)</span> to reach the exit</li>
             <li>Move <span className="font-medium">green blocks</span> horizontally</li>
             <li>Move <span className="font-medium">red blocks</span> vertically</li>
@@ -61,12 +63,13 @@ const Index = () => {
         </motion.div>
         
         <motion.footer 
-          className="mt-10 text-center text-sm text-gray-500"
+          className={`mt-10 text-center ${deviceInfo.isMobile ? "text-xs" : "text-sm"} text-gray-500`}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 1 }}
         >
           <p>© 2025 Hamster Puzzle ∞</p>
+          <p className="text-xs mt-1">Compatible with desktop, mobile and tablets</p>
         </motion.footer>
       </motion.div>
     </div>
