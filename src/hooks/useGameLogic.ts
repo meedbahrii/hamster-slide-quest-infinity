@@ -79,6 +79,73 @@ export const useGameLogic = (initialLevel: number | null = null) => {
     }
   }, [blocks, level, playSound]);
 
+  // Find a block at a specific position
+  const findBlockAt = (x: number, y: number): BlockData | undefined => {
+    return blocks.find(block => 
+      x >= block.x && 
+      x < block.x + block.width && 
+      y >= block.y && 
+      y < block.y + block.height
+    );
+  };
+
+  // Check if a position is empty (no blocks)
+  const isPositionEmpty = (x: number, y: number): boolean => {
+    // Check if position is within the grid
+    if (x < 0 || y < 0 || x >= GRID_SIZE || y >= GRID_SIZE) {
+      return false;
+    }
+    
+    // Check if position is occupied by any block
+    return !blocks.some(block => 
+      x >= block.x && 
+      x < block.x + block.width && 
+      y >= block.y && 
+      y < block.y + block.height
+    );
+  };
+
+  // Try to push a block in the specified direction
+  const tryPushBlock = (blockToPush: BlockData, dx: number, dy: number): boolean => {
+    // Calculate the new position of the block after pushing
+    const newX = blockToPush.x + dx;
+    const newY = blockToPush.y + dy;
+    
+    // Check if the block can move in the specified direction
+    // For horizontal blocks, only allow horizontal movement
+    if (blockToPush.type === "horizontal" && dy !== 0) {
+      return false;
+    }
+    
+    // For vertical blocks, only allow vertical movement
+    if (blockToPush.type === "vertical" && dx !== 0) {
+      return false;
+    }
+    
+    // Check if the new position is valid (within grid and not occupied)
+    for (let x = newX; x < newX + blockToPush.width; x++) {
+      for (let y = newY; y < newY + blockToPush.height; y++) {
+        if (!isPositionEmpty(x, y)) {
+          return false;
+        }
+      }
+    }
+    
+    // Move the block
+    setBlocks(prev => 
+      prev.map(block => 
+        block.id === blockToPush.id 
+          ? { ...block, x: newX, y: newY }
+          : block
+      )
+    );
+    
+    // Play move sound
+    playSound('MOVE');
+    
+    return true;
+  };
+
   // Check if a move is valid
   const isValidMove = (block: BlockData, newX: number, newY: number): boolean => {
     // Check boundaries
@@ -97,6 +164,18 @@ export const useGameLogic = (initialLevel: number | null = null) => {
             newX >= otherBlock.x + otherBlock.width ||
             newY + block.height <= otherBlock.y ||
             newY >= otherBlock.y + otherBlock.height)) {
+        
+        // If there's a collision, try to push the other block
+        if (block.type === "key") {
+          const dx = newX > block.x ? 1 : (newX < block.x ? -1 : 0);
+          const dy = newY > block.y ? 1 : (newY < block.y ? -1 : 0);
+          
+          if (tryPushBlock(otherBlock, dx, dy)) {
+            // If the block was pushed successfully, the move is valid
+            return true;
+          }
+        }
+        
         return false;
       }
     }

@@ -161,7 +161,7 @@ const GameBoard: React.FC<GameBoardProps> = ({ initialLevel = null }) => {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.6 }}
       >
-        <p>Slide blocks to help the hamster escape through the exit!</p>
+        <p>Slide blocks to help the hamster escape! Push red and green blocks out of the way if needed.</p>
       </motion.div>
       
       {/* Level complete overlay */}

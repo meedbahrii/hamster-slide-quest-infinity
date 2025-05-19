@@ -44,6 +44,22 @@ const Index = () => {
         <Header />
         <GameBoard initialLevel={selectedLevel} />
         
+        <motion.div
+          className="mt-6 p-4 bg-white/60 rounded-lg shadow-md max-w-sm text-sm text-[#1A1F2C]"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.7 }}
+        >
+          <h2 className="font-bold mb-2">How to Play:</h2>
+          <ul className="list-disc list-inside space-y-1 text-left">
+            <li>Drag the <span className="font-medium">hamster block (yellow)</span> to reach the exit</li>
+            <li>Move <span className="font-medium">green blocks</span> horizontally</li>
+            <li>Move <span className="font-medium">red blocks</span> vertically</li>
+            <li>The hamster can push blocks if there's space behind them</li>
+            <li>Complete the level with as few moves as possible</li>
+          </ul>
+        </motion.div>
+        
         <motion.footer 
           className="mt-10 text-center text-sm text-gray-500"
           initial={{ opacity: 0 }}
