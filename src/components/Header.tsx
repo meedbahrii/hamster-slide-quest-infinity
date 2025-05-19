@@ -5,8 +5,15 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { List, HelpCircle } from "lucide-react";
 import LevelSelector from "./LevelSelector";
 import { motion } from "framer-motion";
+import { useNavigate } from "react-router-dom";
 
 const Header = () => {
+  const navigate = useNavigate();
+
+  const handleHelpClick = () => {
+    navigate("/tutorial");
+  };
+
   return (
     <motion.header 
       className="w-full max-w-md flex justify-between items-center mb-6 mt-4"
@@ -61,9 +68,7 @@ const Header = () => {
             variant="outline"
             size="icon"
             className="shadow-md bg-[#E5DEFF] hover:bg-[#E5DEFF]/90 border-none"
-            onClick={() => {
-              alert("Slide the blocks to help the hamster reach the exit. The hamster block can only exit when aligned with the opening on the right side.");
-            }}
+            onClick={handleHelpClick}
           >
             <HelpCircle size={18} className="text-[#7E69AB]" />
           </Button>
