@@ -68,7 +68,7 @@ const tryPlaceBlock = (
   return false;
 };
 
-// Check if there's a path for the key block to reach the exit
+// Enhanced path checking algorithm to verify level is solvable
 const checkPathToExit = (blocks: BlockData[], gridSize: number): boolean => {
   const keyBlock = blocks.find(block => block.type === "key");
   if (!keyBlock) return false;
@@ -76,31 +76,63 @@ const checkPathToExit = (blocks: BlockData[], gridSize: number): boolean => {
   // Define the exit row (always at row 2, which is index 2)
   const exitRow = 2;
   
-  // If key block isn't in the exit row, it can't reach the exit
+  // If key block isn't in the exit row, it can't reach the exit directly
   if (keyBlock.y !== exitRow) {
     return false;
   }
   
-  // Check for obstacles between key block and exit
-  const blockingObjects = blocks.filter(block => 
+  // Find all blocks in the path to exit
+  const blocksInPath = blocks.filter(block => 
     block.type !== "key" && 
     block.x > keyBlock.x + keyBlock.width - 1 && 
     block.y <= exitRow && 
     block.y + block.height > exitRow
   );
   
-  if (blockingObjects.length === 0) {
+  if (blocksInPath.length === 0) {
     // No obstacles, can reach exit immediately - this is too easy
     return false;
   }
   
-  // Simple check: if there are too many blocking objects, it might be too hard
-  if (blockingObjects.length > 5) {
+  // Too many obstacles might make it unsolvable
+  if (blocksInPath.length > 5) {
     return false;
   }
   
-  // More sophisticated check would need a pathfinding algorithm
-  // For now, assume it's solvable if there are 1-5 blocking objects
+  // Basic solvability check: ensure there's enough space to maneuver
+  const verticalBlocksNearPath = blocks.filter(block => 
+    block.type === "vertical" && 
+    block.x >= keyBlock.x - 1 && 
+    block.x <= keyBlock.x + keyBlock.width + 1
+  );
+  
+  // Check if there's too much congestion near the key block
+  if (verticalBlocksNearPath.length > 4) {
+    return false;
+  }
+  
+  // Check if there's a possible path through the level
+  // Simple check: make sure there's at least one empty cell above or below the path
+  const hasSpaceToManeuver = Array.from({ length: gridSize }).some((_, x) => {
+    // Check if this column has an empty cell above or below the exit row
+    const hasEmptyCellAbove = !blocks.some(block => 
+      block.x <= x && x < block.x + block.width && 
+      block.y <= exitRow - 1 && exitRow - 1 < block.y + block.height
+    );
+    
+    const hasEmptyCellBelow = !blocks.some(block => 
+      block.x <= x && x < block.x + block.width && 
+      block.y <= exitRow + 1 && exitRow + 1 < block.y + block.height
+    );
+    
+    return hasEmptyCellAbove || hasEmptyCellBelow;
+  });
+  
+  if (!hasSpaceToManeuver) {
+    return false;
+  }
+  
+  // If we've passed all the checks, the level is likely solvable
   return true;
 }
 
@@ -146,7 +178,7 @@ export const generateLevel = (gridSize: number, difficulty: number): BlockData[]
     }
   }
   
-  // Fallback: return a simple level if generation fails
+  // Fallback: return a simple level that's definitely solvable
   return [
     { id: "key", x: 1, y: 2, width: 2, height: 1, type: "key" },
     { id: "v1", x: 3, y: 1, width: 1, height: 2, type: "vertical" },

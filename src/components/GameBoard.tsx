@@ -3,12 +3,13 @@ import React, { useState } from "react";
 import Block from "./Block";
 import LevelComplete from "./LevelComplete";
 import GameControls from "./GameControls";
-import { RefreshCw } from "lucide-react";
+import { RefreshCw, Volume2, VolumeX } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { BlockData, GameBoardProps } from "../types/gameTypes";
 import useGameLogic from "../hooks/useGameLogic";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { motion } from "framer-motion";
+import { useSoundEffects } from "../utils/soundEffects";
 
 // Constants for game configuration
 const GRID_SIZE = 6;
@@ -19,6 +20,8 @@ const MOBILE_CELL_GAP = 3; // Gap for mobile
 
 const GameBoard: React.FC<GameBoardProps> = ({ initialLevel = null }) => {
   const isMobile = useIsMobile();
+  const { playSound, toggleSound, isSoundEnabled } = useSoundEffects();
+  const [soundOn, setSoundOn] = useState(isSoundEnabled());
   
   const {
     blocks,
@@ -45,15 +48,39 @@ const GameBoard: React.FC<GameBoardProps> = ({ initialLevel = null }) => {
     width: cellGap * 3,
     height: blockSize,
   };
+  
+  const handleToggleSound = () => {
+    const newState = toggleSound();
+    setSoundOn(newState);
+    playSound('BUTTON_CLICK');
+  };
 
   return (
     <div className="flex flex-col items-center w-full max-w-md">
       {/* Game controls section */}
-      <GameControls 
-        level={level}
-        moves={moves}
-        onRestart={handleRestart}
-      />
+      <div className="w-full flex justify-between items-center mb-1">
+        <GameControls 
+          level={level}
+          moves={moves}
+          onRestart={handleRestart}
+        />
+        
+        <motion.div
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.9 }}
+          className="ml-2"
+        >
+          <Button 
+            variant="outline"
+            size="icon"
+            onClick={handleToggleSound}
+            className="shadow-md bg-[#FCD34D]/30 hover:bg-[#FCD34D]/50 border-none"
+            title={soundOn ? "Mute sound" : "Enable sound"}
+          >
+            {soundOn ? <Volume2 size={18} /> : <VolumeX size={18} />}
+          </Button>
+        </motion.div>
+      </div>
       
       {/* Game board container with improved styling */}
       <motion.div

@@ -4,12 +4,14 @@ import { BlockData, GameState } from "../types/gameTypes";
 import { tutorialLevels } from "../utils/levels";
 import { generateLevel } from "../utils/levelGenerator";
 import { useToast } from "@/hooks/use-toast";
+import { useSoundEffects } from "../utils/soundEffects";
 
 // Constants
 const GRID_SIZE = 6;
 
 export const useGameLogic = (initialLevel: number | null = null) => {
   const { toast } = useToast();
+  const { playSound } = useSoundEffects();
   const [blocks, setBlocks] = useState<BlockData[]>([]);
   const [level, setLevel] = useState<number>(1);
   const [isLevelComplete, setIsLevelComplete] = useState<boolean>(false);
@@ -60,6 +62,9 @@ export const useGameLogic = (initialLevel: number | null = null) => {
     if (keyBlock && keyBlock.x + keyBlock.width >= GRID_SIZE) {
       // Win condition: key block reaches the exit
       setTimeout(() => {
+        // Play level complete sound
+        playSound('LEVEL_COMPLETE');
+        
         // Save completed level
         const completedLevels = localStorage.getItem("completedLevels");
         const parsedCompletedLevels = completedLevels ? JSON.parse(completedLevels) : [];
@@ -72,7 +77,7 @@ export const useGameLogic = (initialLevel: number | null = null) => {
         setIsLevelComplete(true);
       }, 300);
     }
-  }, [blocks, level]);
+  }, [blocks, level, playSound]);
 
   // Check if a move is valid
   const isValidMove = (block: BlockData, newX: number, newY: number): boolean => {
@@ -102,6 +107,7 @@ export const useGameLogic = (initialLevel: number | null = null) => {
   // Handle restart button
   const handleRestart = () => {
     loadLevel(level);
+    playSound('BUTTON_CLICK');
     toast({
       title: "Level Restarted",
       description: "Let's try again!",
@@ -114,6 +120,7 @@ export const useGameLogic = (initialLevel: number | null = null) => {
     setLevel(nextLevel);
     loadLevel(nextLevel);
     setIsLevelComplete(false);
+    playSound('BUTTON_CLICK');
   };
 
   // Handle pointer down event
@@ -124,6 +131,9 @@ export const useGameLogic = (initialLevel: number | null = null) => {
       x: e.clientX, 
       y: e.clientY 
     });
+    
+    // Play block selection sound
+    playSound('BLOCK_SELECT');
     
     // Update the blocks state to show the block is being moved
     setBlocks(prev => 
@@ -178,7 +188,12 @@ export const useGameLogic = (initialLevel: number | null = null) => {
       // Count as a move if actually moved
       if (cellsToMoveX !== 0 || cellsToMoveY !== 0) {
         setMoves(prev => prev + 1);
+        // Play move sound
+        playSound('MOVE');
       }
+    } else if ((cellsToMoveX !== 0 || cellsToMoveY !== 0)) {
+      // Invalid move
+      playSound('INVALID_MOVE');
     }
   };
 
