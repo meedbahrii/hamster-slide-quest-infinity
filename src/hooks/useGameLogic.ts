@@ -105,27 +105,73 @@ export const useGameLogic = (initialLevel: number | null = null) => {
     );
   };
 
-  // Try to push a block in the specified direction
-  const tryPushBlock = (blockToPush: BlockData, dx: number, dy: number): boolean => {
-    // Calculate the new position of the block after pushing
-    const newX = blockToPush.x + dx;
-    const newY = blockToPush.y + dy;
+  // Check if the path is clear for a block to move to a new position
+  const isPathClear = (block: BlockData, newX: number, newY: number): boolean => {
+    // Determine direction of movement
+    const dx = newX > block.x ? 1 : (newX < block.x ? -1 : 0);
+    const dy = newY > block.y ? 1 : (newY < block.y ? -1 : 0);
     
-    // Check if the block can move in the specified direction
     // For horizontal blocks, only allow horizontal movement
-    if (blockToPush.type === "horizontal" && dy !== 0) {
+    if (block.type === "horizontal" && dy !== 0) {
       return false;
     }
     
     // For vertical blocks, only allow vertical movement
-    if (blockToPush.type === "vertical" && dx !== 0) {
+    if (block.type === "vertical" && dx !== 0) {
       return false;
     }
     
-    // Check if the new position is valid (within grid and not occupied)
+    // Check each position along the path
+    let currentX = block.x;
+    let currentY = block.y;
+    
+    while (currentX !== newX || currentY !== newY) {
+      // Move one step in the direction
+      if (currentX !== newX) currentX += dx;
+      if (currentY !== newY) currentY += dy;
+      
+      // Check each cell of the block at this position
+      for (let x = 0; x < block.width; x++) {
+        for (let y = 0; y < block.height; y++) {
+          const posX = currentX + x;
+          const posY = currentY + y;
+          
+          // Skip checking the original block's position
+          const blockAtPosition = findBlockAt(posX, posY);
+          if (blockAtPosition && blockAtPosition.id !== block.id) {
+            return false;
+          }
+        }
+      }
+    }
+    
+    return true;
+  };
+
+  // Try to push a block in the specified direction
+  const tryPushBlock = (blockToPush: BlockData, dx: number, dy: number): boolean => {
+    // Only allow pushing blocks in their valid direction
+    if ((blockToPush.type === "horizontal" && dy !== 0) || 
+        (blockToPush.type === "vertical" && dx !== 0)) {
+      return false;
+    }
+    
+    // Calculate the new position of the block after pushing
+    const newX = blockToPush.x + dx;
+    const newY = blockToPush.y + dy;
+    
+    // Check if the new position is valid (within grid and path is clear)
+    if (newX < 0 || newY < 0 || 
+        newX + blockToPush.width > GRID_SIZE || 
+        newY + blockToPush.height > GRID_SIZE) {
+      return false;
+    }
+    
+    // Check if all cells in the new position are empty or part of the current block
     for (let x = newX; x < newX + blockToPush.width; x++) {
       for (let y = newY; y < newY + blockToPush.height; y++) {
-        if (!isPositionEmpty(x, y)) {
+        const blockAtPosition = findBlockAt(x, y);
+        if (blockAtPosition && blockAtPosition.id !== blockToPush.id) {
           return false;
         }
       }
@@ -155,29 +201,52 @@ export const useGameLogic = (initialLevel: number | null = null) => {
       return false;
     }
     
-    // Check collision with other blocks
-    for (const otherBlock of blocks) {
-      if (otherBlock.id === block.id) continue;
-      
-      // Check for collision
-      if (!(newX + block.width <= otherBlock.x || 
-            newX >= otherBlock.x + otherBlock.width ||
-            newY + block.height <= otherBlock.y ||
-            newY >= otherBlock.y + otherBlock.height)) {
+    // Only allow moves in the correct direction for each block type
+    if (block.type === "horizontal" && block.y !== newY) {
+      return false;
+    }
+    
+    if (block.type === "vertical" && block.x !== newX) {
+      return false;
+    }
+    
+    // Check if the path is clear
+    if (!isPathClear(block, newX, newY)) {
+      // If path isn't clear, check if we can push blocks (only for key block)
+      if (block.type === "key") {
+        // For key block, check if we can push other blocks
+        const dx = newX > block.x ? 1 : (newX < block.x ? -1 : 0);
+        const dy = newY > block.y ? 1 : (newY < block.y ? -1 : 0);
         
-        // If there's a collision, try to push the other block
-        if (block.type === "key") {
-          const dx = newX > block.x ? 1 : (newX < block.x ? -1 : 0);
-          const dy = newY > block.y ? 1 : (newY < block.y ? -1 : 0);
+        // Find the first block in our way
+        const pathBlocks: BlockData[] = [];
+        let currentX = block.x;
+        let currentY = block.y;
+        
+        while (currentX !== newX || currentY !== newY) {
+          // Move one step in the direction
+          if (currentX !== newX) currentX += dx;
+          if (currentY !== newY) currentY += dy;
           
-          if (tryPushBlock(otherBlock, dx, dy)) {
-            // If the block was pushed successfully, the move is valid
-            return true;
+          // Check for blocks at this position
+          for (let x = 0; x < block.width; x++) {
+            for (let y = 0; y < block.height; y++) {
+              const blockAtPosition = findBlockAt(currentX + x, currentY + y);
+              if (blockAtPosition && blockAtPosition.id !== block.id && 
+                  !pathBlocks.some(b => b.id === blockAtPosition.id)) {
+                pathBlocks.push(blockAtPosition);
+              }
+            }
           }
         }
         
-        return false;
+        // Can only push one block at a time
+        if (pathBlocks.length === 1) {
+          return tryPushBlock(pathBlocks[0], dx, dy);
+        }
       }
+      
+      return false;
     }
     
     return true;
@@ -233,12 +302,16 @@ export const useGameLogic = (initialLevel: number | null = null) => {
     const deltaY = e.clientY - dragStartPosition.y;
     
     // Determine the movement based on block type
-    const isHorizontal = draggedBlock.type === "horizontal" || draggedBlock.type === "key";
-    const isVertical = draggedBlock.type === "vertical";
+    let cellsToMoveX = 0;
+    let cellsToMoveY = 0;
     
-    // Calculate grid cells to move (rounded to nearest cell)
-    const cellsToMoveX = isHorizontal ? Math.round(deltaX / (60 + 4)) : 0;
-    const cellsToMoveY = isVertical ? Math.round(deltaY / (60 + 4)) : 0;
+    if (draggedBlock.type === "horizontal" || draggedBlock.type === "key") {
+      cellsToMoveX = Math.round(deltaX / (60 + 4));
+      cellsToMoveY = 0; // Horizontal blocks only move horizontally
+    } else if (draggedBlock.type === "vertical") {
+      cellsToMoveX = 0; // Vertical blocks only move vertically
+      cellsToMoveY = Math.round(deltaY / (60 + 4));
+    }
     
     // Calculate new position
     const newX = draggedBlock.x + cellsToMoveX;
