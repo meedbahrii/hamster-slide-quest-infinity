@@ -8,7 +8,8 @@ import {
   Undo, 
   Timer, 
   Trophy, 
-  Star
+  Star,
+  RefreshCw
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
