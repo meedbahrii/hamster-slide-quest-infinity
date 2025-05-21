@@ -55,10 +55,20 @@ const Index = () => {
           <h2 className="font-bold mb-2">How to Play:</h2>
           <ul className={`list-disc list-inside space-y-1 text-left ${deviceInfo.isMobile ? "text-xs" : "text-sm"} text-[#1A1F2C]`}>
             <li>Drag the <span className="font-medium">hamster block (yellow)</span> to reach the exit</li>
-            <li>Move <span className="font-medium">green blocks</span> horizontally</li>
-            <li>Move <span className="font-medium">red blocks</span> vertically</li>
-            <li>The hamster can push blocks if there's space behind them</li>
-            <li><span className="font-medium">Red and green blocks</span> cannot share the same row or column</li>
+            <li>For <span className="font-medium">green blocks</span>:
+              <ul className="list-inside ml-4">
+                <li>Horizontal ones move left and right</li>
+                <li>Vertical ones move up and down</li>
+              </ul>
+            </li>
+            <li>For <span className="font-medium">red blocks</span>:
+              <ul className="list-inside ml-4">
+                <li>Horizontal ones move left and right</li>
+                <li>Vertical ones move up and down</li>
+              </ul>
+            </li>
+            <li>The hamster <span className="font-medium">cannot push</span> other blocks</li>
+            <li><span className="font-medium">Red and green blocks</span> can share the same row or column</li>
             <li>Complete the level with as few moves as possible</li>
           </ul>
         </motion.div>
