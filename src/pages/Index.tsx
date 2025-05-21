@@ -69,6 +69,8 @@ const Index = () => {
             </li>
             <li>The hamster <span className="font-medium">cannot push</span> other blocks</li>
             <li><span className="font-medium">Horizontal blocks</span> cannot be in front of the hamster on the same row</li>
+            <li><span className="font-medium">Two horizontal blocks</span> cannot be on the same row</li>
+            <li><span className="font-medium">Two vertical blocks</span> cannot be in the same column</li>
             <li><span className="font-medium">Red and green blocks</span> can share the same row or column</li>
             <li>Complete the level with as few moves as possible</li>
           </ul>

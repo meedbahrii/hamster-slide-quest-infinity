@@ -1,4 +1,3 @@
-
 import { BlockData } from "../types/gameTypes";
 
 // Generate a random integer between min (inclusive) and max (inclusive)
@@ -42,37 +41,57 @@ const isPositionValid = (block: BlockData, blocks: BlockData[], gridSize: number
     }
   }
   
-  // Check column/row rule: two big shapes can't be in the same column or row
+  // Check the new rule: Two horizontal shapes cannot be on the same line
+  if (block.type === "horizontal") {
+    const horizontalBlocksInRow = blocks.filter(b => 
+      b.type === "horizontal" && b.y === block.y
+    );
+    
+    if (horizontalBlocksInRow.length > 0) {
+      return false; // Rule violation - another horizontal block on same row
+    }
+  }
+  
+  // Check the new rule: Two vertical shapes cannot be on the same column
+  if (block.type === "vertical") {
+    const verticalBlocksInColumn = blocks.filter(b => 
+      b.type === "vertical" && b.x === block.x
+    );
+    
+    if (verticalBlocksInColumn.length > 0) {
+      return false; // Rule violation - another vertical block in same column
+    }
+  }
+  
+  // Check if two blocks would overlap in the grid
   if (block.type !== "key") {
     if (block.type === "horizontal") {
-      // For horizontal blocks, check for vertical blocks in the same columns
+      // For horizontal blocks, check for vertical blocks that would overlap
       for (let x = block.x; x < block.x + block.width; x++) {
-        // Find any vertical blocks that share this column
         const verticalBlocksInColumn = blocks.filter(b => 
           b.type === "vertical" && 
           b.x <= x && x < b.x + b.width
         );
         
         for (const vBlock of verticalBlocksInColumn) {
-          // Check if the vertical block overlaps with our block's rows
+          // Check if the vertical block overlaps with our block's row
           if (!(block.y + block.height <= vBlock.y || block.y >= vBlock.y + vBlock.height)) {
-            return false; // Rule violation
+            return false; // Overlap violation
           }
         }
       }
     } else if (block.type === "vertical") {
-      // For vertical blocks, check for horizontal blocks in the same rows
+      // For vertical blocks, check for horizontal blocks that would overlap
       for (let y = block.y; y < block.y + block.height; y++) {
-        // Find any horizontal blocks that share this row
         const horizontalBlocksInRow = blocks.filter(b => 
           b.type === "horizontal" && 
           b.y <= y && y < b.y + b.height
         );
         
         for (const hBlock of horizontalBlocksInRow) {
-          // Check if the horizontal block overlaps with our block's columns
+          // Check if the horizontal block overlaps with our block's column
           if (!(block.x + block.width <= hBlock.x || block.x >= hBlock.x + hBlock.width)) {
-            return false; // Rule violation
+            return false; // Overlap violation
           }
         }
       }
