@@ -25,6 +25,43 @@ const isPositionValid = (block: BlockData, blocks: BlockData[], gridSize: number
     }
   }
   
+  // Check column/row rule: two big shapes can't be in the same column or row
+  if (block.type !== "key") {
+    if (block.type === "horizontal") {
+      // For horizontal blocks, check for vertical blocks in the same columns
+      for (let x = block.x; x < block.x + block.width; x++) {
+        // Find any vertical blocks that share this column
+        const verticalBlocksInColumn = blocks.filter(b => 
+          b.type === "vertical" && 
+          b.x <= x && x < b.x + b.width
+        );
+        
+        for (const vBlock of verticalBlocksInColumn) {
+          // Check if the vertical block overlaps with our block's rows
+          if (!(block.y + block.height <= vBlock.y || block.y >= vBlock.y + vBlock.height)) {
+            return false; // Rule violation
+          }
+        }
+      }
+    } else if (block.type === "vertical") {
+      // For vertical blocks, check for horizontal blocks in the same rows
+      for (let y = block.y; y < block.y + block.height; y++) {
+        // Find any horizontal blocks that share this row
+        const horizontalBlocksInRow = blocks.filter(b => 
+          b.type === "horizontal" && 
+          b.y <= y && y < b.y + b.height
+        );
+        
+        for (const hBlock of horizontalBlocksInRow) {
+          // Check if the horizontal block overlaps with our block's columns
+          if (!(block.x + block.width <= hBlock.x || block.x >= hBlock.x + hBlock.width)) {
+            return false; // Rule violation
+          }
+        }
+      }
+    }
+  }
+  
   return true;
 };
 

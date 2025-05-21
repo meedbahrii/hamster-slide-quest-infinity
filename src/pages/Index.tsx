@@ -58,6 +58,7 @@ const Index = () => {
             <li>Move <span className="font-medium">green blocks</span> horizontally</li>
             <li>Move <span className="font-medium">red blocks</span> vertically</li>
             <li>The hamster can push blocks if there's space behind them</li>
+            <li><span className="font-medium">Red and green blocks</span> cannot share the same row or column</li>
             <li>Complete the level with as few moves as possible</li>
           </ul>
         </motion.div>

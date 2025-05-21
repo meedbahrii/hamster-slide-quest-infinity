@@ -105,6 +105,58 @@ export const useGameLogic = (initialLevel: number | null = null) => {
     );
   };
 
+  // Check if a block's new position would violate the rule of two big shapes in same column or row
+  const wouldViolateColumnRowRule = (block: BlockData, newX: number, newY: number): boolean => {
+    // Ignore this check for the key block
+    if (block.type === "key") return false;
+    
+    // For horizontal blocks, check for vertical blocks in the same columns
+    if (block.type === "horizontal") {
+      // Check each column this block would occupy
+      for (let x = newX; x < newX + block.width; x++) {
+        // Find any vertical blocks that share this column
+        const verticalBlocksInColumn = blocks.filter(b => 
+          b.id !== block.id && // Not the same block
+          b.type === "vertical" && // Only care about vertical blocks
+          b.x <= x && x < b.x + b.width // Block occupies this column
+        );
+        
+        // If there's a vertical block in this column that shares any row with our block,
+        // it's a violation
+        for (const vBlock of verticalBlocksInColumn) {
+          // Check if the vertical block would overlap with our block's rows
+          if (!(newY + block.height <= vBlock.y || newY >= vBlock.y + vBlock.height)) {
+            return true; // Violation found
+          }
+        }
+      }
+    }
+    
+    // For vertical blocks, check for horizontal blocks in the same rows
+    if (block.type === "vertical") {
+      // Check each row this block would occupy
+      for (let y = newY; y < newY + block.height; y++) {
+        // Find any horizontal blocks that share this row
+        const horizontalBlocksInRow = blocks.filter(b => 
+          b.id !== block.id && // Not the same block
+          b.type === "horizontal" && // Only care about horizontal blocks
+          b.y <= y && y < b.y + b.height // Block occupies this row
+        );
+        
+        // If there's a horizontal block in this row that shares any column with our block,
+        // it's a violation
+        for (const hBlock of horizontalBlocksInRow) {
+          // Check if the horizontal block would overlap with our block's columns
+          if (!(newX + block.width <= hBlock.x || newX >= hBlock.x + hBlock.width)) {
+            return true; // Violation found
+          }
+        }
+      }
+    }
+    
+    return false; // No violations found
+  };
+
   // Check if the path is clear for a block to move to a new position
   const isPathClear = (block: BlockData, newX: number, newY: number): boolean => {
     // Determine direction of movement
@@ -167,6 +219,11 @@ export const useGameLogic = (initialLevel: number | null = null) => {
       return false;
     }
     
+    // Check if pushing would violate the column/row rule
+    if (wouldViolateColumnRowRule(blockToPush, newX, newY)) {
+      return false;
+    }
+    
     // Check if all cells in the new position are empty or part of the current block
     for (let x = newX; x < newX + blockToPush.width; x++) {
       for (let y = newY; y < newY + blockToPush.height; y++) {
@@ -207,6 +264,11 @@ export const useGameLogic = (initialLevel: number | null = null) => {
     }
     
     if (block.type === "vertical" && block.x !== newX) {
+      return false;
+    }
+    
+    // Check if the move would violate the column/row rule
+    if (wouldViolateColumnRowRule(block, newX, newY)) {
       return false;
     }
     
