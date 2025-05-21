@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from "react";
 import { BlockData, GameState } from "../types/gameTypes";
 import { tutorialLevels } from "../utils/levels";
@@ -157,6 +156,26 @@ export const useGameLogic = (initialLevel: number | null = null) => {
     return false; // No violations found
   };
 
+  // Check if a horizontal block would be in front of the hamster on the same row
+  const wouldBlockHamsterPath = (block: BlockData, newX: number, newY: number): boolean => {
+    // Only apply this rule to horizontal blocks
+    if (block.type !== "horizontal") return false;
+    
+    // Find the hamster block
+    const keyBlock = blocks.find(b => b.type === "key");
+    if (!keyBlock) return false;
+    
+    // Check if the block is on the same row as the hamster
+    if (newY !== keyBlock.y) return false;
+    
+    // Check if the block would be to the right of the hamster
+    if (newX > keyBlock.x + keyBlock.width - 1) {
+      return true; // Violation - horizontal block is in front of hamster
+    }
+    
+    return false; // No violation
+  };
+
   // Check if the path is clear for a block to move to a new position
   const isPathClear = (block: BlockData, newX: number, newY: number): boolean => {
     // Determine direction of movement
@@ -224,6 +243,11 @@ export const useGameLogic = (initialLevel: number | null = null) => {
       return false;
     }
     
+    // Check if horizontal block would be in front of hamster
+    if (wouldBlockHamsterPath(blockToPush, newX, newY)) {
+      return false;
+    }
+    
     // Check if all cells in the new position are empty or part of the current block
     for (let x = newX; x < newX + blockToPush.width; x++) {
       for (let y = newY; y < newY + blockToPush.height; y++) {
@@ -269,6 +293,11 @@ export const useGameLogic = (initialLevel: number | null = null) => {
     
     // Check if the move would violate the column/row rule
     if (wouldViolateColumnRowRule(block, newX, newY)) {
+      return false;
+    }
+    
+    // Check if horizontal block would be in front of hamster
+    if (wouldBlockHamsterPath(block, newX, newY)) {
       return false;
     }
     

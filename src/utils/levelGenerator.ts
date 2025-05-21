@@ -6,12 +6,29 @@ const randomInt = (min: number, max: number): number => {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 };
 
+// Check if a horizontal block would be in front of a key block
+const isInFrontOfKey = (block: BlockData, keyBlock: BlockData | undefined): boolean => {
+  // If there's no key block or the block is not horizontal, return false
+  if (!keyBlock || block.type !== "horizontal") return false;
+  
+  // Check if the block is on the same row as the key and in front of it
+  return block.y === keyBlock.y && block.x > keyBlock.x + keyBlock.width - 1;
+};
+
 // Check if a block position is valid (doesn't overlap with other blocks)
 const isPositionValid = (block: BlockData, blocks: BlockData[], gridSize: number): boolean => {
   // Check grid boundaries
   if (block.x < 0 || block.y < 0 || 
       block.x + block.width > gridSize || 
       block.y + block.height > gridSize) {
+    return false;
+  }
+  
+  // Find the key block
+  const keyBlock = blocks.find(b => b.type === "key");
+  
+  // Check if horizontal block would be in front of the hamster
+  if (isInFrontOfKey(block, keyBlock)) {
     return false;
   }
   
