@@ -89,9 +89,16 @@ const GameBoard: React.FC<GameBoardProps> = ({ initialLevel = null }) => {
     // Set orientation to portrait if in native app
     if (isNativeApp) {
       try {
-        window.screen.orientation.lock('portrait');
+        // Check if screen orientation API is available and use it safely
+        if (window.screen?.orientation?.lock) {
+          window.screen.orientation.lock('portrait').catch(err => {
+            console.log('Orientation lock failed:', err);
+          });
+        } else {
+          console.log('Orientation lock not supported on this device');
+        }
       } catch (error) {
-        console.log('Orientation lock not supported');
+        console.log('Error with orientation lock:', error);
       }
     }
     
