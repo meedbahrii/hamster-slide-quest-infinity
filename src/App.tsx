@@ -4,7 +4,8 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { Capacitor } from "@capacitor/core";
 import Index from "./pages/Index";
 import Tutorial from "./pages/Tutorial";
 import NotFound from "./pages/NotFound";
@@ -12,6 +13,13 @@ import NotFound from "./pages/NotFound";
 const queryClient = new QueryClient();
 
 const App = () => {
+  const [isNativePlatform, setIsNativePlatform] = useState(false);
+  
+  // Detect native platform
+  useEffect(() => {
+    setIsNativePlatform(Capacitor.isNativePlatform());
+  }, []);
+
   // Add meta tags for better compatibility
   useEffect(() => {
     // Meta tags for Apple devices
@@ -48,10 +56,29 @@ const App = () => {
     
     document.addEventListener('touchmove', handleTouchMove, { passive: false });
     
+    // If on native platform, set orientation to portrait
+    if (isNativePlatform) {
+      try {
+        window.screen.orientation.lock('portrait');
+      } catch (error) {
+        console.log('Orientation lock not supported');
+      }
+    }
+    
     return () => {
       document.removeEventListener('touchmove', handleTouchMove);
     };
-  }, []);
+  }, [isNativePlatform]);
+
+  // Add CSS variables for safe areas in native apps
+  useEffect(() => {
+    if (isNativePlatform) {
+      document.documentElement.style.setProperty('--safe-area-top', 'env(safe-area-inset-top)');
+      document.documentElement.style.setProperty('--safe-area-bottom', 'env(safe-area-inset-bottom)');
+      document.documentElement.style.setProperty('--safe-area-left', 'env(safe-area-inset-left)');
+      document.documentElement.style.setProperty('--safe-area-right', 'env(safe-area-inset-right)');
+    }
+  }, [isNativePlatform]);
 
   return (
     <QueryClientProvider client={queryClient}>

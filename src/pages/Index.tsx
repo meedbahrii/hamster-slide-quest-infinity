@@ -4,12 +4,17 @@ import GameBoard from "../components/GameBoard";
 import Header from "../components/Header";
 import { motion } from "framer-motion";
 import { useDeviceInfo } from "@/hooks/use-mobile";
+import { Capacitor } from "@capacitor/core";
 
 const Index = () => {
   const [selectedLevel, setSelectedLevel] = useState<number | null>(null);
   const deviceInfo = useDeviceInfo();
+  const [isNativeApp, setIsNativeApp] = useState(false);
 
   useEffect(() => {
+    // Check if running as native app
+    setIsNativeApp(Capacitor.isNativePlatform());
+    
     // Update the document title
     document.title = "Hamster Puzzle ∞";
     
@@ -22,9 +27,12 @@ const Index = () => {
     }
   }, []);
 
+  // Native app specific classes
+  const nativeAppClass = isNativeApp ? "pt-safe-top pb-safe-bottom px-safe" : "";
+
   return (
     <div 
-      className="min-h-screen flex flex-col items-center justify-start p-4 overflow-x-hidden"
+      className={`min-h-screen flex flex-col items-center justify-start p-4 overflow-x-hidden ${nativeAppClass}`}
       style={{
         background: `linear-gradient(135deg, #f5e8d2 0%, #f0d4b8 100%)`,
         backgroundSize: '100% 100%',
@@ -46,35 +54,37 @@ const Index = () => {
         <Header />
         <GameBoard initialLevel={selectedLevel} />
         
-        <motion.div
-          className={`mt-6 p-4 bg-white/60 rounded-lg shadow-md ${deviceInfo.isMobile ? "max-w-xs" : "max-w-sm"}`}
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.7 }}
-        >
-          <h2 className="font-bold mb-2">How to Play:</h2>
-          <ul className={`list-disc list-inside space-y-1 text-left ${deviceInfo.isMobile ? "text-xs" : "text-sm"} text-[#1A1F2C]`}>
-            <li>Drag the <span className="font-medium">hamster block (yellow)</span> to reach the exit</li>
-            <li>For <span className="font-medium">green blocks</span>:
-              <ul className="list-inside ml-4">
-                <li>Horizontal ones move left and right</li>
-                <li>Vertical ones move up and down</li>
-              </ul>
-            </li>
-            <li>For <span className="font-medium">red blocks</span>:
-              <ul className="list-inside ml-4">
-                <li>Horizontal ones move left and right</li>
-                <li>Vertical ones move up and down</li>
-              </ul>
-            </li>
-            <li>The hamster <span className="font-medium">cannot push</span> other blocks</li>
-            <li><span className="font-medium">Horizontal blocks</span> cannot be in front of the hamster on the same row</li>
-            <li><span className="font-medium">Two horizontal blocks</span> cannot be on the same row</li>
-            <li><span className="font-medium">Two vertical blocks</span> cannot be in the same column</li>
-            <li><span className="font-medium">Red and green blocks</span> can share the same row or column</li>
-            <li>Complete the level with as few moves as possible</li>
-          </ul>
-        </motion.div>
+        {(!isNativeApp || deviceInfo.isDesktop) && (
+          <motion.div
+            className={`mt-6 p-4 bg-white/60 rounded-lg shadow-md ${deviceInfo.isMobile ? "max-w-xs" : "max-w-sm"}`}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.7 }}
+          >
+            <h2 className="font-bold mb-2">How to Play:</h2>
+            <ul className={`list-disc list-inside space-y-1 text-left ${deviceInfo.isMobile ? "text-xs" : "text-sm"} text-[#1A1F2C]`}>
+              <li>Drag the <span className="font-medium">hamster block (yellow)</span> to reach the exit</li>
+              <li>For <span className="font-medium">green blocks</span>:
+                <ul className="list-inside ml-4">
+                  <li>Horizontal ones move left and right</li>
+                  <li>Vertical ones move up and down</li>
+                </ul>
+              </li>
+              <li>For <span className="font-medium">red blocks</span>:
+                <ul className="list-inside ml-4">
+                  <li>Horizontal ones move left and right</li>
+                  <li>Vertical ones move up and down</li>
+                </ul>
+              </li>
+              <li>The hamster <span className="font-medium">cannot push</span> other blocks</li>
+              <li><span className="font-medium">Horizontal blocks</span> cannot be in front of the hamster on the same row</li>
+              <li><span className="font-medium">Two horizontal blocks</span> cannot be on the same row</li>
+              <li><span className="font-medium">Two vertical blocks</span> cannot be in the same column</li>
+              <li><span className="font-medium">Red and green blocks</span> can share the same row or column</li>
+              <li>Complete the level with as few moves as possible</li>
+            </ul>
+          </motion.div>
+        )}
         
         <motion.footer 
           className={`mt-10 text-center ${deviceInfo.isMobile ? "text-xs" : "text-sm"} text-gray-500`}

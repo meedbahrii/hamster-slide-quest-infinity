@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Block from "./Block";
 import LevelComplete from "./LevelComplete";
 import GameControls from "./GameControls";
@@ -10,6 +10,7 @@ import useGameLogic from "../hooks/useGameLogic";
 import { useDeviceInfo } from "@/hooks/use-mobile";
 import { motion } from "framer-motion";
 import { useSoundEffects } from "../utils/soundEffects";
+import { Capacitor } from "@capacitor/core";
 
 // Constants for game configuration
 const GRID_SIZE = 6;
@@ -23,6 +24,12 @@ const GameBoard: React.FC<GameBoardProps> = ({ initialLevel = null }) => {
   const deviceInfo = useDeviceInfo();
   const { playSound, toggleSound, isSoundEnabled } = useSoundEffects();
   const [soundOn, setSoundOn] = useState(isSoundEnabled());
+  const [isNativeApp, setIsNativeApp] = useState(false);
+  
+  // Check if running as native app
+  useEffect(() => {
+    setIsNativeApp(Capacitor.isNativePlatform());
+  }, []);
   
   const {
     blocks,
@@ -40,7 +47,7 @@ const GameBoard: React.FC<GameBoardProps> = ({ initialLevel = null }) => {
   let blockSize = DESKTOP_BLOCK_SIZE;
   let cellGap = DESKTOP_CELL_GAP;
   
-  if (deviceInfo.isMobile) {
+  if (deviceInfo.isMobile || isNativeApp) {
     blockSize = MOBILE_BLOCK_SIZE;
     cellGap = MOBILE_CELL_GAP;
   } else if (deviceInfo.isTablet) {
@@ -77,16 +84,28 @@ const GameBoard: React.FC<GameBoardProps> = ({ initialLevel = null }) => {
     }
     
     // Set proper content for responsive design
-    viewportMeta.setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no');
+    viewportMeta.setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover');
+    
+    // Set orientation to portrait if in native app
+    if (isNativeApp) {
+      try {
+        window.screen.orientation.lock('portrait');
+      } catch (error) {
+        console.log('Orientation lock not supported');
+      }
+    }
     
     // Return cleanup function
     return () => {
       // No need to remove the meta tag on cleanup
     };
-  }, []);
+  }, [isNativeApp]);
+
+  // Native app specific adjustments
+  const nativeAppClass = isNativeApp ? "pt-safe-top pb-safe-bottom px-safe" : "";
 
   return (
-    <div className="flex flex-col items-center w-full max-w-md">
+    <div className={`flex flex-col items-center w-full max-w-md ${nativeAppClass}`}>
       {/* Game controls section */}
       <div className="w-full flex justify-between items-center mb-1">
         <GameControls 
@@ -192,8 +211,8 @@ const GameBoard: React.FC<GameBoardProps> = ({ initialLevel = null }) => {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.6 }}
       >
-        <p className={deviceInfo.isMobile ? "text-xs" : "text-sm"}>
-          {deviceInfo.touchDevice 
+        <p className={deviceInfo.isMobile || isNativeApp ? "text-xs" : "text-sm"}>
+          {deviceInfo.touchDevice || isNativeApp
             ? "Drag blocks to help the hamster escape! Push red and green blocks out of the way if needed." 
             : "Slide blocks to help the hamster escape! Push red and green blocks out of the way if needed."}
         </p>
