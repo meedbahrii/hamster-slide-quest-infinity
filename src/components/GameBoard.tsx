@@ -1,8 +1,12 @@
+
 import React, { useState, useEffect } from "react";
 import Block from "./Block";
 import LevelComplete from "./LevelComplete";
 import GameControls from "./GameControls";
 import AchievementNotification from "./AchievementNotification";
+import SettingsMenu from "./SettingsMenu";
+import OnboardingTutorial from "./OnboardingTutorial";
+import EnhancedLevelSelector from "./EnhancedLevelSelector";
 import { RefreshCw, Volume2, VolumeX } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { BlockData, GameBoardProps } from "../types/gameTypes";
@@ -12,15 +16,16 @@ import { motion } from "framer-motion";
 import { useSoundEffects } from "../utils/soundEffects";
 import { checkAchievements, Achievement } from "../utils/achievements";
 import { getStatistics } from "../utils/statistics";
+import { completeDailyChallenge } from "../utils/dailyChallenge";
 import { Capacitor } from "@capacitor/core";
 
 // Constants for game configuration
 const GRID_SIZE = 6;
-const DESKTOP_BLOCK_SIZE = 60; // Size of each block in pixels for desktop
-const DESKTOP_CELL_GAP = 4; // Gap between cells in pixels for desktop
-const MOBILE_BLOCK_SIZE = 50; // Size for mobile
-const MOBILE_CELL_GAP = 3; // Gap for mobile
-const TABLET_BLOCK_SIZE = 55; // Size for tablet
+const DESKTOP_BLOCK_SIZE = 60;
+const DESKTOP_CELL_GAP = 4;
+const MOBILE_BLOCK_SIZE = 50;
+const MOBILE_CELL_GAP = 3;
+const TABLET_BLOCK_SIZE = 55;
 
 const GameBoard: React.FC<GameBoardProps> = ({ initialLevel = null }) => {
   const deviceInfo = useDeviceInfo();
@@ -28,6 +33,8 @@ const GameBoard: React.FC<GameBoardProps> = ({ initialLevel = null }) => {
   const [soundOn, setSoundOn] = useState(isSoundEnabled());
   const [isNativeApp, setIsNativeApp] = useState(false);
   const [newAchievements, setNewAchievements] = useState<Achievement[]>([]);
+  const [currentTheme, setCurrentTheme] = useState('default');
+  const [showTutorial, setShowTutorial] = useState(false);
   
   // Check if running as native app
   useEffect(() => {
@@ -51,14 +58,31 @@ const GameBoard: React.FC<GameBoardProps> = ({ initialLevel = null }) => {
     handlePointerUp
   } = useGameLogic(initialLevel);
 
-  // Check for achievements periodically
+  // Load theme from localStorage
   useEffect(() => {
-    const stats = getStatistics();
-    const achievements = checkAchievements(stats);
-    if (achievements.length > 0) {
-      setNewAchievements(achievements);
+    const savedTheme = localStorage.getItem('gameTheme');
+    if (savedTheme) {
+      setCurrentTheme(savedTheme);
     }
-  }, [isLevelComplete]);
+  }, []);
+
+  // Check for achievements and daily challenge completion
+  useEffect(() => {
+    if (isLevelComplete) {
+      const stats = getStatistics();
+      const achievements = checkAchievements(stats);
+      if (achievements.length > 0) {
+        setNewAchievements(achievements);
+      }
+
+      // Check if this was a daily challenge
+      const dailyChallenge = completeDailyChallenge(moves);
+      if (dailyChallenge) {
+        // Could add special celebration for daily challenge completion
+        console.log('Daily challenge completed!', dailyChallenge);
+      }
+    }
+  }, [isLevelComplete, moves]);
 
   // Adjust sizes based on device
   let blockSize = DESKTOP_BLOCK_SIZE;
@@ -77,7 +101,7 @@ const GameBoard: React.FC<GameBoardProps> = ({ initialLevel = null }) => {
   const exitCellStyle = {
     position: "absolute" as const,
     right: -cellGap,
-    top: 2 * blockSize + 3 * cellGap, // Fixed exit at row 2
+    top: 2 * blockSize + 3 * cellGap,
     width: cellGap * 3,
     height: blockSize,
   };
@@ -87,6 +111,42 @@ const GameBoard: React.FC<GameBoardProps> = ({ initialLevel = null }) => {
     setSoundOn(newState);
     playSound('BUTTON_CLICK');
   };
+
+  const handleThemeChange = (theme: string) => {
+    setCurrentTheme(theme);
+  };
+
+  const handleLevelSelect = (selectedLevel: number) => {
+    // This would need to be implemented in the game logic
+    console.log('Level selected:', selectedLevel);
+  };
+
+  const handleDailyChallengeSelect = () => {
+    // This would need to be implemented in the game logic
+    console.log('Daily challenge selected');
+  };
+
+  const handleTutorialComplete = () => {
+    setShowTutorial(false);
+  };
+
+  // Apply theme-based styling
+  const getThemeColors = (theme: string) => {
+    switch (theme) {
+      case 'ocean':
+        return { primary: '#0EA5E9', secondary: '#0284C7', accent: '#38BDF8' };
+      case 'forest':
+        return { primary: '#10B981', secondary: '#059669', accent: '#34D399' };
+      case 'sunset':
+        return { primary: '#F97316', secondary: '#EA580C', accent: '#FB923C' };
+      case 'lavender':
+        return { primary: '#A855F7', secondary: '#9333EA', accent: '#C084FC' };
+      default:
+        return { primary: '#FCD34D', secondary: '#F59E0B', accent: '#FDE68A' };
+    }
+  };
+
+  const themeColors = getThemeColors(currentTheme);
 
   // Add meta tag for mobile viewport if not present
   React.useEffect(() => {
@@ -126,55 +186,69 @@ const GameBoard: React.FC<GameBoardProps> = ({ initialLevel = null }) => {
     };
   }, [isNativeApp]);
 
-  // Native app specific adjustments
   const nativeAppClass = isNativeApp ? "pt-safe-top pb-safe-bottom px-safe" : "";
 
   return (
     <div className={`flex flex-col items-center w-full max-w-md ${nativeAppClass}`}>
+      {/* Onboarding Tutorial */}
+      <OnboardingTutorial onComplete={handleTutorialComplete} />
+      
       {/* Achievement notifications */}
       <AchievementNotification
         achievements={newAchievements}
         onClose={() => setNewAchievements([])}
       />
       
-      {/* Game controls section */}
+      {/* Enhanced game controls section */}
       <div className="w-full flex justify-between items-center mb-1">
-        <GameControls 
-          level={level}
-          moves={moves}
-          hintsUsed={hintsUsed}
-          undosUsed={undosUsed}
-          canUndo={canUndo}
-          onRestart={handleRestart}
-          onHint={handleHint}
-          onUndo={handleUndo}
-        />
+        <div className="flex items-center gap-2">
+          <EnhancedLevelSelector
+            currentLevel={level}
+            onLevelSelect={handleLevelSelect}
+            onDailyChallengeSelect={handleDailyChallengeSelect}
+          />
+          
+          <GameControls 
+            level={level}
+            moves={moves}
+            hintsUsed={hintsUsed}
+            undosUsed={undosUsed}
+            canUndo={canUndo}
+            onRestart={handleRestart}
+            onHint={handleHint}
+            onUndo={handleUndo}
+          />
+        </div>
         
-        <motion.div
-          whileHover={{ scale: 1.1 }}
-          whileTap={{ scale: 0.9 }}
-          className="ml-2"
-        >
-          <Button 
-            variant="outline"
-            size="icon"
-            onClick={handleToggleSound}
-            className="shadow-md bg-[#FCD34D]/30 hover:bg-[#FCD34D]/50 border-none"
-            title={soundOn ? "Mute sound" : "Enable sound"}
+        <div className="flex items-center gap-2">
+          <SettingsMenu onThemeChange={handleThemeChange} />
+          
+          <motion.div
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
           >
-            {soundOn ? <Volume2 size={18} /> : <VolumeX size={18} />}
-          </Button>
-        </motion.div>
+            <Button 
+              variant="outline"
+              size="icon"
+              onClick={handleToggleSound}
+              className="shadow-md bg-[#FCD34D]/30 hover:bg-[#FCD34D]/50 border-none"
+              title={soundOn ? "Mute sound" : "Enable sound"}
+            >
+              {soundOn ? <Volume2 size={18} /> : <VolumeX size={18} />}
+            </Button>
+          </motion.div>
+        </div>
       </div>
       
-      {/* Game board container with improved styling */}
+      {/* Game board container with theme-based styling */}
       <motion.div
         className="relative bg-[#1A1F2C]/95 rounded-2xl overflow-hidden shadow-xl border border-white/10"
         style={{ 
           width: `${boardSize}px`, 
           height: `${boardSize}px`,
           padding: `${cellGap}px`,
-          touchAction: "none" // Prevent default touch behaviors like scrolling
+          touchAction: "none",
+          background: `linear-gradient(135deg, ${themeColors.primary}20, ${themeColors.secondary}20)`
         }}
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -211,16 +285,17 @@ const GameBoard: React.FC<GameBoardProps> = ({ initialLevel = null }) => {
           );
         })}
         
-        {/* Exit marker - fixed at row 2 with better visual */}
+        {/* Exit marker with theme colors */}
         <motion.div 
           style={exitCellStyle}
-          className="bg-[#FCD34D]/20 rounded-l-md flex items-center justify-center border-l border-[#FCD34D]/40"
+          className="rounded-l-md flex items-center justify-center border-l"
           initial={{ opacity: 0, x: 10 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.5, duration: 0.3 }}
         >
           <motion.div 
-            className="h-1/2 border-dotted border-l-2 border-[#FCD34D]/60 mr-1"
+            className="h-1/2 border-dotted border-l-2 mr-1"
+            style={{ borderColor: `${themeColors.accent}60` }}
             animate={{ x: [0, 5, 0] }}
             transition={{ repeat: Infinity, duration: 1.5, ease: "easeInOut" }}
           />
