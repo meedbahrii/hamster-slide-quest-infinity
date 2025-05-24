@@ -1,5 +1,5 @@
 
-interface DailyChallenge {
+export interface DailyChallenge {
   id: string;
   date: string;
   level: number;
