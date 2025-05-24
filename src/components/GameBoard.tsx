@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import Block from "./Block";
 import LevelComplete from "./LevelComplete";
@@ -199,66 +198,75 @@ const GameBoard: React.FC<GameBoardProps> = ({ initialLevel = null }) => {
         onClose={() => setNewAchievements([])}
       />
       
-      {/* Enhanced game controls section */}
-      <div className="w-full flex justify-between items-center mb-1">
-        <div className="flex items-center gap-2">
-          <EnhancedLevelSelector
-            currentLevel={level}
-            onLevelSelect={handleLevelSelect}
-            onDailyChallengeSelect={handleDailyChallengeSelect}
-          />
-          
-          <GameControls 
-            level={level}
-            moves={moves}
-            hintsUsed={hintsUsed}
-            undosUsed={undosUsed}
-            canUndo={canUndo}
-            onRestart={handleRestart}
-            onHint={handleHint}
-            onUndo={handleUndo}
-          />
+      {/* Header with level info */}
+      <motion.div 
+        className="w-full mb-4 bg-gradient-to-r from-gray-800 to-gray-700 rounded-2xl p-4 shadow-xl"
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+      >
+        <div className="flex justify-between items-center mb-2">
+          <div className="text-white">
+            <h2 className="text-lg font-bold">Key Exit</h2>
+            <p className="text-sm text-gray-300">Swipe the hamster key to the exit to complete the level</p>
+          </div>
+          <div className="text-yellow-400 text-2xl">🔑</div>
         </div>
         
-        <div className="flex items-center gap-2">
-          <SettingsMenu onThemeChange={handleThemeChange} />
-          
-          <motion.div
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.9 }}
-          >
+        <div className="flex justify-between items-center text-sm">
+          <span className="text-gray-300">Level {level}</span>
+          <span className="text-gray-300">Moves: {moves}</span>
+          <div className="flex gap-2">
+            <SettingsMenu onThemeChange={handleThemeChange} />
             <Button 
               variant="outline"
               size="icon"
               onClick={handleToggleSound}
-              className="shadow-md bg-[#FCD34D]/30 hover:bg-[#FCD34D]/50 border-none"
-              title={soundOn ? "Mute sound" : "Enable sound"}
+              className="bg-gray-600 hover:bg-gray-500 border-gray-500 text-white"
             >
-              {soundOn ? <Volume2 size={18} /> : <VolumeX size={18} />}
+              {soundOn ? <Volume2 size={16} /> : <VolumeX size={16} />}
             </Button>
-          </motion.div>
+          </div>
         </div>
+      </motion.div>
+      
+      {/* Enhanced game controls section */}
+      <div className="w-full flex justify-between items-center mb-4">
+        <EnhancedLevelSelector
+          currentLevel={level}
+          onLevelSelect={handleLevelSelect}
+          onDailyChallengeSelect={handleDailyChallengeSelect}
+        />
+        
+        <GameControls 
+          level={level}
+          moves={moves}
+          hintsUsed={hintsUsed}
+          undosUsed={undosUsed}
+          canUndo={canUndo}
+          onRestart={handleRestart}
+          onHint={handleHint}
+          onUndo={handleUndo}
+        />
       </div>
       
-      {/* Game board container with theme-based styling */}
+      {/* Game board container with dark theme */}
       <motion.div
-        className="relative bg-[#1A1F2C]/95 rounded-2xl overflow-hidden shadow-xl border border-white/10"
+        className="relative bg-gradient-to-br from-gray-900 to-gray-800 rounded-3xl overflow-hidden shadow-2xl border border-gray-700"
         style={{ 
           width: `${boardSize}px`, 
           height: `${boardSize}px`,
           padding: `${cellGap}px`,
-          touchAction: "none",
-          background: `linear-gradient(135deg, ${themeColors.primary}20, ${themeColors.secondary}20)`
+          touchAction: "none"
         }}
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
       >
         {/* Grid pattern background */}
-        <div className="absolute inset-0 grid"
+        <div className="absolute inset-0"
           style={{
-            backgroundImage: `linear-gradient(to right, #F1F0FB/5 1px, transparent 1px), 
-                            linear-gradient(to bottom, #F1F0FB/5 1px, transparent 1px)`,
+            backgroundImage: `linear-gradient(to right, #374151 1px, transparent 1px), 
+                            linear-gradient(to bottom, #374151 1px, transparent 1px)`,
             backgroundSize: `${blockSize + cellGap}px ${blockSize + cellGap}px`,
             backgroundPosition: `${cellGap}px ${cellGap}px`
           }}
@@ -271,7 +279,7 @@ const GameBoard: React.FC<GameBoardProps> = ({ initialLevel = null }) => {
           return (
             <motion.div
               key={`cell-${x}-${y}`}
-              className="absolute bg-[#F1F0FB]/5 rounded-sm"
+              className="absolute bg-gray-700/30 rounded-lg border border-gray-600/20"
               style={{
                 left: x * (blockSize + cellGap) + cellGap,
                 top: y * (blockSize + cellGap) + cellGap,
@@ -285,20 +293,21 @@ const GameBoard: React.FC<GameBoardProps> = ({ initialLevel = null }) => {
           );
         })}
         
-        {/* Exit marker with theme colors */}
+        {/* Exit marker */}
         <motion.div 
           style={exitCellStyle}
-          className="rounded-l-md flex items-center justify-center border-l"
+          className="rounded-l-xl flex items-center justify-center bg-gradient-to-r from-yellow-500 to-yellow-400 shadow-lg"
           initial={{ opacity: 0, x: 10 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.5, duration: 0.3 }}
         >
           <motion.div 
-            className="h-1/2 border-dotted border-l-2 mr-1"
-            style={{ borderColor: `${themeColors.accent}60` }}
-            animate={{ x: [0, 5, 0] }}
-            transition={{ repeat: Infinity, duration: 1.5, ease: "easeInOut" }}
-          />
+            className="text-white text-2xl"
+            animate={{ scale: [1, 1.1, 1] }}
+            transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
+          >
+            🚪
+          </motion.div>
         </motion.div>
         
         {/* Blocks */}
@@ -313,20 +322,6 @@ const GameBoard: React.FC<GameBoardProps> = ({ initialLevel = null }) => {
             onPointerUp={handlePointerUp}
           />
         ))}
-      </motion.div>
-      
-      {/* Game instructions - responsive text */}
-      <motion.div 
-        className="mt-4 text-center max-w-xs text-sm text-[#1A1F2C]/70 bg-white/30 p-2 rounded-lg"
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.6 }}
-      >
-        <p className={deviceInfo.isMobile || isNativeApp ? "text-xs" : "text-sm"}>
-          {deviceInfo.touchDevice || isNativeApp
-            ? "Drag blocks to help the hamster escape! Use hints and undo if you get stuck." 
-            : "Slide blocks to help the hamster escape! Use hints and undo if you get stuck."}
-        </p>
       </motion.div>
       
       {/* Level complete overlay */}
