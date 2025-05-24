@@ -60,8 +60,9 @@ const App = () => {
     if (isNativePlatform) {
       try {
         // Check if screen orientation API is available and use it safely
-        if (window.screen?.orientation?.lock) {
-          window.screen.orientation.lock('portrait').catch(err => {
+        const screen = window.screen as any;
+        if (screen?.orientation?.lock) {
+          screen.orientation.lock('portrait').catch((err: any) => {
             console.log('Orientation lock failed:', err);
           });
         } else {
