@@ -1,9 +1,12 @@
 import { useState, useEffect, useCallback } from "react";
-import { BlockData, GameState } from "../types/gameTypes";
+import { BlockData, GameState, GameMove } from "../types/gameTypes";
 import { tutorialLevels } from "../utils/levels";
 import { generateLevel } from "../utils/levelGenerator";
 import { useToast } from "@/hooks/use-toast";
 import { useSoundEffects } from "../utils/soundEffects";
+import { getHint } from "../utils/hints";
+import { checkAchievements } from "../utils/achievements";
+import { recordLevelCompletion, updateStatistics } from "../utils/statistics";
 
 // Constants
 const GRID_SIZE = 6;
@@ -16,13 +19,21 @@ export const useGameLogic = (initialLevel: number | null = null) => {
   const [isLevelComplete, setIsLevelComplete] = useState<boolean>(false);
   const [gameStarted, setGameStarted] = useState<boolean>(false);
   const [moves, setMoves] = useState<number>(0);
+  const [hintsUsed, setHintsUsed] = useState<number>(0);
+  const [undosUsed, setUndosUsed] = useState<number>(0);
   const [draggedBlock, setDraggedBlock] = useState<BlockData | null>(null);
   const [dragStartPosition, setDragStartPosition] = useState({ x: 0, y: 0 });
+  const [moveHistory, setMoveHistory] = useState<GameMove[]>([]);
+  const [hintHighlight, setHintHighlight] = useState<string | null>(null);
 
   // Load a level
   const loadLevel = useCallback((levelNumber: number) => {
     setIsLevelComplete(false);
     setMoves(0);
+    setHintsUsed(0);
+    setUndosUsed(0);
+    setMoveHistory([]);
+    setHintHighlight(null);
     
     // Update highest level in localStorage
     const storedHighestLevel = localStorage.getItem("highestLevel");
@@ -53,7 +64,61 @@ export const useGameLogic = (initialLevel: number | null = null) => {
     }
   }, [gameStarted, level, initialLevel, loadLevel]);
 
-  // Check for win condition
+  // Handle hint
+  const handleHint = () => {
+    const hint = getHint(blocks);
+    if (hint) {
+      setHintHighlight(hint.blockId);
+      setHintsUsed(prev => prev + 1);
+      updateStatistics({ hintsUsed: (updateStatistics({}).hintsUsed || 0) + 1 });
+      
+      // Clear highlight after 3 seconds
+      setTimeout(() => setHintHighlight(null), 3000);
+      
+      playSound('BUTTON_CLICK');
+      toast({
+        title: "Hint!",
+        description: `Try moving the highlighted block ${hint.direction}`,
+      });
+    } else {
+      toast({
+        title: "No hints available",
+        description: "Try exploring different moves!",
+      });
+    }
+  };
+
+  // Handle undo
+  const handleUndo = () => {
+    if (moveHistory.length === 0) return;
+    
+    const lastMove = moveHistory[moveHistory.length - 1];
+    setBlocks(prev => 
+      prev.map(block => 
+        block.id === lastMove.blockId
+          ? { ...block, x: lastMove.fromX, y: lastMove.fromY }
+          : block
+      )
+    );
+    
+    setMoveHistory(prev => prev.slice(0, -1));
+    setMoves(prev => Math.max(0, prev - 1));
+    setUndosUsed(prev => prev + 1);
+    updateStatistics({ undosUsed: (updateStatistics({}).undosUsed || 0) + 1 });
+    
+    playSound('BUTTON_CLICK');
+    toast({
+      title: "Move undone",
+      description: "Last move has been reversed",
+    });
+  };
+
+  // Record a move for undo functionality
+  const recordMove = (blockId: string, fromX: number, fromY: number, toX: number, toY: number) => {
+    setMoveHistory(prev => [...prev, { blockId, fromX, fromY, toX, toY }]);
+  };
+
+  // Check for win condition with achievements
   useEffect(() => {
     if (blocks.length === 0) return;
     
@@ -63,6 +128,12 @@ export const useGameLogic = (initialLevel: number | null = null) => {
       setTimeout(() => {
         // Play level complete sound
         playSound('LEVEL_COMPLETE');
+        
+        // Record statistics
+        const stats = recordLevelCompletion(level, moves, hintsUsed > 0);
+        
+        // Check for achievements
+        const newAchievements = checkAchievements(stats);
         
         // Save completed level
         const completedLevels = localStorage.getItem("completedLevels");
@@ -76,7 +147,7 @@ export const useGameLogic = (initialLevel: number | null = null) => {
         setIsLevelComplete(true);
       }, 300);
     }
-  }, [blocks, level, playSound]);
+  }, [blocks, level, moves, hintsUsed, playSound]);
 
   // Find a block at a specific position
   const findBlockAt = (x: number, y: number): BlockData | undefined => {
@@ -395,7 +466,7 @@ export const useGameLogic = (initialLevel: number | null = null) => {
     (e.target as HTMLElement).setPointerCapture(e.pointerId);
   };
 
-  // Handle pointer move event
+  // Enhanced handlePointerMove to record moves
   const handlePointerMove = (e: React.PointerEvent) => {
     if (!draggedBlock) return;
     
@@ -422,12 +493,18 @@ export const useGameLogic = (initialLevel: number | null = null) => {
     if ((cellsToMoveX !== 0 || cellsToMoveY !== 0) && 
         isValidMove(draggedBlock, newX, newY)) {
       
+      // Record the move for undo
+      recordMove(draggedBlock.id, draggedBlock.x, draggedBlock.y, newX, newY);
+      
       // Update the block position
       setBlocks(prev => 
         prev.map(b => 
           b.id === draggedBlock.id ? { ...b, x: newX, y: newY, isMoving: true } : b
         )
       );
+      
+      // Clear hint highlight
+      setHintHighlight(null);
       
       // Update drag start position
       setDragStartPosition({ 
@@ -467,13 +544,24 @@ export const useGameLogic = (initialLevel: number | null = null) => {
     setDraggedBlock(null);
   };
 
+  // Update blocks to include hint highlighting
+  const blocksWithHighlight = blocks.map(block => ({
+    ...block,
+    isHighlighted: block.id === hintHighlight
+  }));
+
   return {
-    blocks,
+    blocks: blocksWithHighlight,
     level,
     moves,
+    hintsUsed,
+    undosUsed,
     isLevelComplete,
+    canUndo: moveHistory.length > 0,
     handleRestart,
     handleNextLevel,
+    handleHint,
+    handleUndo,
     handlePointerDown,
     handlePointerMove,
     handlePointerUp

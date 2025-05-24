@@ -27,9 +27,10 @@ const Block: React.FC<BlockProps> = ({
   return (
     <motion.div
       className={cn(
-        "absolute rounded-lg cursor-move drop-shadow-md",
+        "absolute rounded-lg cursor-move drop-shadow-md transition-all duration-200",
         colors[block.type],
-        block.isMoving ? "ring-2 ring-white/50 z-10" : ""
+        block.isMoving ? "ring-2 ring-white/50 z-10" : "",
+        block.isHighlighted ? "ring-2 ring-blue-400 ring-opacity-75 animate-pulse" : ""
       )}
       style={{
         width: `${width}px`,
@@ -43,6 +44,8 @@ const Block: React.FC<BlockProps> = ({
         opacity: 1,
         boxShadow: block.isMoving 
           ? "0 10px 15px -3px rgba(0, 0, 0, 0.2)" 
+          : block.isHighlighted
+          ? "0 0 20px rgba(59, 130, 246, 0.5)"
           : "0 4px 6px -1px rgba(0, 0, 0, 0.1)" 
       }}
       transition={{ 
@@ -72,6 +75,18 @@ const Block: React.FC<BlockProps> = ({
               </span>
             </motion.div>
           </div>
+        )}
+        
+        {/* Hint indicator */}
+        {block.isHighlighted && (
+          <motion.div
+            className="absolute -top-2 -right-2 bg-blue-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold"
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ delay: 0.2 }}
+          >
+            !
+          </motion.div>
         )}
       </div>
     </motion.div>

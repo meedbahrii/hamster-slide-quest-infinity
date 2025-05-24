@@ -1,8 +1,8 @@
-
 import React, { useState, useEffect } from "react";
 import Block from "./Block";
 import LevelComplete from "./LevelComplete";
 import GameControls from "./GameControls";
+import AchievementNotification from "./AchievementNotification";
 import { RefreshCw, Volume2, VolumeX } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { BlockData, GameBoardProps } from "../types/gameTypes";
@@ -10,6 +10,8 @@ import useGameLogic from "../hooks/useGameLogic";
 import { useDeviceInfo } from "@/hooks/use-mobile";
 import { motion } from "framer-motion";
 import { useSoundEffects } from "../utils/soundEffects";
+import { checkAchievements, Achievement } from "../utils/achievements";
+import { getStatistics } from "../utils/statistics";
 import { Capacitor } from "@capacitor/core";
 
 // Constants for game configuration
@@ -25,6 +27,7 @@ const GameBoard: React.FC<GameBoardProps> = ({ initialLevel = null }) => {
   const { playSound, toggleSound, isSoundEnabled } = useSoundEffects();
   const [soundOn, setSoundOn] = useState(isSoundEnabled());
   const [isNativeApp, setIsNativeApp] = useState(false);
+  const [newAchievements, setNewAchievements] = useState<Achievement[]>([]);
   
   // Check if running as native app
   useEffect(() => {
@@ -35,13 +38,27 @@ const GameBoard: React.FC<GameBoardProps> = ({ initialLevel = null }) => {
     blocks,
     level,
     moves,
+    hintsUsed,
+    undosUsed,
     isLevelComplete,
+    canUndo,
     handleRestart,
     handleNextLevel,
+    handleHint,
+    handleUndo,
     handlePointerDown,
     handlePointerMove,
     handlePointerUp
   } = useGameLogic(initialLevel);
+
+  // Check for achievements periodically
+  useEffect(() => {
+    const stats = getStatistics();
+    const achievements = checkAchievements(stats);
+    if (achievements.length > 0) {
+      setNewAchievements(achievements);
+    }
+  }, [isLevelComplete]);
 
   // Adjust sizes based on device
   let blockSize = DESKTOP_BLOCK_SIZE;
@@ -114,12 +131,23 @@ const GameBoard: React.FC<GameBoardProps> = ({ initialLevel = null }) => {
 
   return (
     <div className={`flex flex-col items-center w-full max-w-md ${nativeAppClass}`}>
+      {/* Achievement notifications */}
+      <AchievementNotification
+        achievements={newAchievements}
+        onClose={() => setNewAchievements([])}
+      />
+      
       {/* Game controls section */}
       <div className="w-full flex justify-between items-center mb-1">
         <GameControls 
           level={level}
           moves={moves}
+          hintsUsed={hintsUsed}
+          undosUsed={undosUsed}
+          canUndo={canUndo}
           onRestart={handleRestart}
+          onHint={handleHint}
+          onUndo={handleUndo}
         />
         
         <motion.div
@@ -221,8 +249,8 @@ const GameBoard: React.FC<GameBoardProps> = ({ initialLevel = null }) => {
       >
         <p className={deviceInfo.isMobile || isNativeApp ? "text-xs" : "text-sm"}>
           {deviceInfo.touchDevice || isNativeApp
-            ? "Drag blocks to help the hamster escape! Push red and green blocks out of the way if needed." 
-            : "Slide blocks to help the hamster escape! Push red and green blocks out of the way if needed."}
+            ? "Drag blocks to help the hamster escape! Use hints and undo if you get stuck." 
+            : "Slide blocks to help the hamster escape! Use hints and undo if you get stuck."}
         </p>
       </motion.div>
       

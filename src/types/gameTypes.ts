@@ -7,6 +7,7 @@ export interface BlockData {
   height: number;
   type: "horizontal" | "vertical" | "key";
   isMoving?: boolean;
+  isHighlighted?: boolean; // For hint system
 }
 
 export interface GameState {
@@ -14,6 +15,8 @@ export interface GameState {
   level: number;
   moves: number;
   isLevelComplete: boolean;
+  hintsUsed: number;
+  undosUsed: number;
 }
 
 export interface BlockProps {
@@ -27,4 +30,12 @@ export interface BlockProps {
 
 export interface GameBoardProps {
   initialLevel?: number | null;
+}
+
+export interface GameMove {
+  blockId: string;
+  fromX: number;
+  fromY: number;
+  toX: number;
+  toY: number;
 }
